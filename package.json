@@ -1,0 +1,17 @@
+{
+  "name": "ts-web",
+  "module": "index.ts",
+  "type": "module",
+  "scripts": {
+    "start": "bun --hot ."
+  },
+  "devDependencies": {
+    "bun-types": "latest"
+  },
+  "peerDependencies": {
+    "typescript": "^5.0.0"
+  },
+  "dependencies": {
+    "handlebars": "^4.7.8"
+  }
+}
