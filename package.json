@@ -1,7 +1,13 @@
 {
-  "name": "ts-web",
+  "name": "bunzii",
   "module": "test.ts",
   "type": "module",
+  "version": "0.0.1-beta",
+  "author": {
+    "name": "coffeeRequired",
+    "email": "nextikczcz@gmai.com"
+  },
+  "description": "A simple and fast web framework for Bun.js",
   "scripts": {
     "start": "bun --hot test.ts",
     "bench": "cd benchmark && bun bench"
