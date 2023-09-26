@@ -47,11 +47,6 @@ See [configuration file](/config.ts) and the [type declarations](/lib/types.ts).
 ### Table 
 
 
-| Name | Average | GET `/` | GET `/api/hi` | GET `/id/35?name=wV3` | GET `/a/b` | POST `/api/json` |
+| Name | Average | GET `/` | GET `/api/hi` | GET `/id/12?name=zTC` | GET `/a/b` | POST `/api/json` |
 |  :---: | :---: | :---: | :---: | :---: | :---: | :---: |
-| [Stric 4.2.3](/results/main/Stric) | 88838.30 | 100619.43 | 94235.28 | 87143.29 | 95765.76 | 66427.75 |
-| [Vix 0.0.7](/results/main/Vix) | 84641.94 | 91025.44 | 93755.54 | 85692.61 | 89772.15 | 62963.98 |
-| [Elysia 0.7.2](/results/main/Elysia) | 74038.59 | 81570.17 | 77156.63 | 73939.48 | 80764.64 | 56762.04 |
-| [Hono 3.7.2](/results/main/Hono) | 70221.11 | 89161.70 | 79671.72 | 60593.13 | 65869.58 | 55809.42 |
-| [Bunzii](/results/main/) | 62282.56 | 70524.16 | 67772.46 | 57838.67 | 63139.62 | 52137.90 |
-| [Grace 0.3.9](/results/main/Grace) | 47962.48 | 55458.27 | 53203.86 | 41386.60 | 52973.82 | 36789.83 |
+| [Bunzii](/results/main/) | 58747.29 | 62502.38 | 64596.03 | 58429.26 | 59007.95 | 49200.84 |

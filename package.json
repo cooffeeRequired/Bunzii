@@ -1,9 +1,10 @@
 {
   "name": "ts-web",
-  "module": "index.ts",
+  "module": "test.ts",
   "type": "module",
   "scripts": {
-    "start": "bun --hot ."
+    "start": "bun --hot test.ts",
+    "bench": "cd benchmark && bun bench"
   },
   "devDependencies": {
     "bun-types": "latest"
@@ -12,6 +13,8 @@
     "typescript": "^5.0.0"
   },
   "dependencies": {
+    "fast-querystring": "^1.1.2",
+    "fp-ts": "^2.16.1",
     "handlebars": "^4.7.8"
   }
 }

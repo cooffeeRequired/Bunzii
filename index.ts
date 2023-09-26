@@ -1,5 +1,7 @@
 import { Server, file } from "bun"
 import Handlebars from "handlebars";
+const QS = require('fast-querystring')
+import * as J from 'fp-ts/Json'
 
 type BunziParams = {
     [key: string]: {}
@@ -11,7 +13,8 @@ type BunziContent = {
 
 interface BunzRequest extends Request {
     params: BunziParams,
-    content: any
+    content: BunziContent | any,
+    query: any;
 }
 
 type BunzEngineRoute = {
@@ -19,7 +22,7 @@ type BunzEngineRoute = {
     path: string,
     handler: Function,
     params: BunziParams
-}
+} | null // Ahha!
 
 type BunzEngineRoutes = {
     [key: string]: BunzEngineRoute
@@ -33,7 +36,7 @@ type BunziResponseStatuses = {
 }
 
 class BunziResponse {
-    private statusCode: number = 404;
+    private statusCode: number = 201;
     private headers: Headers;
     private engine: string;
 
@@ -87,16 +90,6 @@ class BunziResponse {
         this.statusCode = code;
         return this;
     }
-
-    public statusText(text: string) {
-        const find = Object.keys(Bunzii.statuses).find((status) => {
-            const statusObj = Bunzii.statuses[status];
-            return statusObj.short === text;
-        });
-        if (find) this.statusCode = parseInt(find);
-        return this;
-    }
-
 }
 
 
@@ -110,19 +103,6 @@ class Bunzii {
 
     constructor() {
         try {
-            // * Load statuses from File
-            // const file = Bun.file('statuses.json');
-            // file.json().then((data: BunziResponseStatuses) => {
-            //     const filteredObject: BunziResponseStatuses = {};
-
-            //     for (const key in data) {
-            //         if (!key.includes("xx")) {
-            //             filteredObject[key] = data[key];
-            //         }
-            //     }
-            //     Bunzii.statuses = filteredObject;
-            // })
-
             // * Set default headers for Bunzi
             this.headers.set('X-Powered-By', 'Bunzi')
             this.headers.set('Server', 'BunziServe')
@@ -131,33 +111,46 @@ class Bunzii {
             console.error(e.toString())
         }
     }
+    //! check it.
+    private findRoute(path: string): Promise<BunzEngineRoute | null> {
+        return new Promise((resolve) => {
+            const splitPath = path.split("/").filter(Boolean);
+            const routes = Object.keys(this.routes);
 
-    private findRoute(path: string) {
-        return new Promise<BunzEngineRoute>((resolve, reject) => {
+            for (const route of routes) {
+                const routeSplit = route.split("/").filter(Boolean);
 
-            // Goes through routes and extracts all prams
-            let splitPath = path.split("/")
-            splitPath.shift()
-
-            Object.keys(this.routes).map((v, i) => {
-                let routeSplit = v.split("/")
-                routeSplit.shift()
-
-                if (splitPath.length == routeSplit.length) {
-                    let difference = splitPath.filter(x => !routeSplit.includes(x));
-                    let prams: BunziParams = {}
-
-                    for (let pramNameIndex in routeSplit) {
-                        let pramName = routeSplit[pramNameIndex]
-                        let thing = pramName.replace(":", "")
-                        prams[thing] = difference[pramNameIndex]
-                    }
-                    let route: BunzEngineRoute = this.routes[v]
-                    route.params = prams
-                    resolve(route)
+                if (splitPath.length !== routeSplit.length) {
+                    continue;
                 }
-            })
-        })
+
+                const params: BunziParams = {};
+                const isMatch = routeSplit.every((routePart, i) => {
+                    const urlPart = splitPath[i];
+
+                    if (routePart.startsWith(":")) {
+                        const paramName = routePart.slice(1); // Remove ':'
+                        params[paramName] = urlPart;
+                        return true; // Continue checking
+                    } else if (routePart !== urlPart) {
+                        return false; // Exit early if parts don't match
+                    }
+
+                    return true; // Continue checking
+                });
+
+                if (isMatch) {
+                    const matchingRoute = this.routes[route];
+
+                    if (matchingRoute) {
+                        matchingRoute.params = params;
+                        return resolve(matchingRoute);
+                    }
+                }
+            }
+
+            resolve(null); // Default to 404 if no matching route is found
+        });
     }
 
     public setEngine(name: string) {
@@ -199,45 +192,35 @@ class Bunzii {
             fetch: async (request: BunzRequest) => {
                 const requestURL = new URL(request.url);
                 const requestPath = requestURL.pathname;
-                let route = this.routes[requestPath];
-                request.content = request;
-                if (!route) route = await this.findRoute(requestPath)
+                // Check if the route is cached
+                //let route = this.routes[requestPath];
+                const route = this.routes[requestPath] || await this.findRoute(requestPath);
+
+                if (!route) return new Response('Not Found', { status: 404, headers: this.headers });
 
                 if (route && route.method === request.method) {
-                    request.params = route.params
-                    return route.handler(request, new BunziResponse({ headers: this.headers, template_engine: this.engine }));
+                    request = request;
+                    request.params = route.params;
+                    request.query = QS.parse(request.url.split('?')[1])
+                    const response = route.handler(request, new BunziResponse({ headers: this.headers, template_engine: this.engine }));
+                    return response;
                 }
-                return new Response('404');
+
+                // if (!route) {
+                //     // If not cached, find the route and cache it
+                //     route = await this.findRoute(requestPath);
+                //     if (route) {
+                //         this.routes[requestPath] = route;
+                //     }
+                // }
+
+
+                // Use a constant for 404 response
+                //return new Response('Not Found', { status: 404, headers: this.headers });
             },
-        })
+        });
     }
+
 }
 
-// ABC
-
 export { Bunzii, BunziResponse, BunzRequest }
-
-const engine = new Bunzii()
-engine.setEngine("handlebars")
-engine.get('/hello', (req: BunzRequest, res: BunziResponse) => {
-    return res.json({ message: 'Hello World!' })
-})
-
-engine.get("/:name/abc/:last", (req: BunzRequest, res: BunziResponse) => {
-    console.log("ABC")
-    return res.status(200).json(req.params ?? {})
-    // return res.json({})
-})
-
-engine.get("/:name/xyz/:last", (req: BunzRequest, res: BunziResponse) => {
-    console.log("XYZ")
-    return res.json(req.params ?? {})
-    // return res.json({})
-})
-
-engine.post('/api/json', async (req: BunzRequest, res: BunziResponse) => {
-    return res.status(200).json(await req.content.json());
-})
-
-engine.listen(3000)
-console.log('Listening on port 3000')
